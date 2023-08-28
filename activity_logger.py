@@ -4,7 +4,13 @@ import os
 import sqlite3
 import subprocess
 
-logging.basicConfig(filename=os.path.expanduser('~/Documents/app_activity_errors.log'), level=logging.ERROR)
+formatter = logging.Formatter('%(asctime)s - %(message)s')
+logger = logging.getLogger('app_activity')
+logger.setLevel(logging.ERROR)
+file_handler = logging.FileHandler(os.path.expanduser('~/Documents/app_activity_errors.log'))
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
 db_path = os.path.expanduser('~/Documents/app_activity_db.sqlite')
 
 conn = sqlite3.connect(db_path)
@@ -33,10 +39,9 @@ p = subprocess.Popen(['osascript', '-'],
 out, err = p.communicate(ascript)
 
 if err:
-    logging.error(err)
+    logger.error(err)
 elif out:
     app = out.strip()
-    
     if app == "Google Chrome":
         ascript = '''
             tell application "Google Chrome"
@@ -56,13 +61,12 @@ elif out:
         out, err = p.communicate(ascript)
         
         if err:
-            logging.error(err) 
+            logger.error(err) 
         elif out:
             url, title = out.strip().split('\n')
     else:
         url = ""
         title = ""
-        
     timestamp = datetime.datetime.now()
     c.execute('INSERT INTO app_activity VALUES (?, ?, ?, ?)', (timestamp, app, url, title))
     conn.commit()
